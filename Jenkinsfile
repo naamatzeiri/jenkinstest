@@ -2,62 +2,66 @@ pipeline {
     agent {
         kubernetes {
             yamlFile 'build-pod.yaml'
+            defaultContainer 'ez-docker-helm-build'
         }
     }
 
-    environment {
-        // Define environment variables for Docker credentials
-        DOCKER_CREDENTIALS_ID = 'dockerhub' // ID of the Docker credentials in Jenkins
-        DOCKER_REGISTRY = 'docker.io' // e.g., docker.io or your private registry
-        DOCKER_IMAGE = 'naamatzeiri/jenkinstest' // Replace with your Docker username and image name
+    environment{
+        DOCKER_IMAGE = 'naamatzeiri/jenkinstest'
+        GITHUB_API_URL = 'https://api.github.com'
+        GITHUB_REPO = 'naamatzeiri/jenkinstest'
+        GITHUB_TOKEN = credentials('jenkins-a')
     }
 
-    stages {
-        stage('Checkout') {
+    stages{
+        stage("Checkout code"){
             steps {
-                // Checkout the source code from the main branch of the Git repository
-                git branch: 'main', url: 'https://github.com/naamatzeiri/jenkinstest'
-                // Checkout scm
+                checkout scm
             }
         }
-        stage('Build Docker Image') {
+
+        stage("Build docker image"){
             steps {
-                container('ez-docker-helm-build') { // Ensure the container name matches the one in your build-pod.yaml
-                    script {
-                        // Build the Docker image with the latest tag
-                        sh "docker build -t ${env.DOCKER_IMAGE}:latest ."
+                script {
+                    dockerImage = docker.build("${DOCKER_IMAGE}:latest", "--no-cache .")
+                }
+            }
+        }
+
+        stage('Push Docker image') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-creds') {
+                        dockerImage.push("latest")
                     }
                 }
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Create merge request'){
+            when {
+                not {
+                    branch 'main'
+                }
+            }
             steps {
-                container('ez-docker-helm-build') { // Ensure the container name matches the one in your build-pod.yaml
+                withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
                     script {
-                        // Push the Docker image to the registry
-                        docker.withRegistry("https://${env.DOCKER_REGISTRY}", "${env.DOCKER_CREDENTIALS_ID}") {
-                            sh "docker push ${env.DOCKER_IMAGE}:latest"
-                        }
+                        def branchName = env.BRANCH_NAME
+                        def pullRequestTitle = "Merge ${branchName} into main"
+                        def pullRequestBody = "Automatically generated merge request for branch ${branchName}"
+
+                        sh """
+                            curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+                            -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}", "base": "main" }' \
+                            ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
+                        """
                     }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            container('ez-docker-helm-build') {
-                // Clean up any leftover Docker images on the Jenkins agent
-                sh 'docker system prune -f'
-            }
-        }
-        success {
-            // Notify the user of the successful build
-            echo 'Docker image built and pushed successfully.'
-        }
-        failure {
-            // Notify the user of the failed build
-            echo 'Build failed.'
         }
     }
 }
