@@ -21,22 +21,27 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Build the Docker image with the latest tag
-                    sh "docker build -t ${env.DOCKER_IMAGE}:latest ."
+                container('ez-docker-helm-build') { // Assuming the container that can run Docker is named 'docker'
+                    script {
+                        // Build the Docker image with the latest tag
+                        sh "docker build -t ${env.DOCKER_IMAGE}:latest ."
+                    }
                 }
             }
         }
         stage('Push Docker Image') {
             steps {
-                script {
-                    // Push the Docker image to the registry
-                    docker.withRegistry("https://${env.DOCKER_REGISTRY}", "${env.DOCKER_CREDENTIALS_ID}") {
-                        sh "docker push ${env.DOCKER_IMAGE}:latest"
+                container('ez-docker-helm-build') { // Assuming the container that can run Docker is named 'docker'
+                    script {
+                        // Push the Docker image to the registry
+                        docker.withRegistry("https://${env.DOCKER_REGISTRY}", "${env.DOCKER_CREDENTIALS_ID}") {
+                            sh "docker push ${env.DOCKER_IMAGE}:latest"
+                        }
                     }
                 }
             }
         }
+    }
     }
 
     post {
