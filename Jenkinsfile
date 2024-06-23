@@ -10,7 +10,7 @@ pipeline {
         DOCKER_IMAGE = 'naamatzeiri/jenkinstest'
         GITHUB_API_URL = 'https://api.github.com'
         GITHUB_REPO = 'naamatzeiri/jenkinstest'
-        GITHUB_TOKEN = credentials('jenkins-a')
+        // GITHUB_TOKEN = credentials('jenkins-a')
     }
 
     stages{
