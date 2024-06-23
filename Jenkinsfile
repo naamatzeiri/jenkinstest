@@ -17,6 +17,7 @@ pipeline {
             steps {
                 // Checkout the source code from the main branch of the Git repository
                 git branch: 'main', url: 'https://github.com/naamatzeiri/jenkinstest'
+                // Checkout scm
             }
         }
         stage('Build Docker Image') {
