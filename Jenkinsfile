@@ -41,27 +41,27 @@ pipeline {
             }
         }
 
-        stage('Create merge request'){
-            when {
-                not {
-                    branch 'main'
-                }
-            }
-            steps {
-                withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
-                    script {
-                        def branchName = env.BRANCH_NAME
-                        def pullRequestTitle = "Merge ${branchName} into main"
-                        def pullRequestBody = "Automatically generated merge request for branch ${branchName}"
+        // stage('Create merge request'){
+        //     when {
+        //         not {
+        //             branch 'main'
+        //         }
+        //     }
+        //     steps {
+        //         withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
+        //             script {
+        //                 def branchName = env.BRANCH_NAME
+        //                 def pullRequestTitle = "Merge ${branchName} into main"
+        //                 def pullRequestBody = "Automatically generated merge request for branch ${branchName}"
 
-                        sh """
-                            curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-                            -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}", "base": "main" }' \
-                            ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
-                        """
-                    }
-                }
-            }
-        }
+        //                 sh """
+        //                     curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+        //                     -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}", "base": "main" }' \
+        //                     ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
     }
 }
