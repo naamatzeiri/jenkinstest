@@ -46,8 +46,10 @@ pipeline {
 
     post {
         always {
+            container('ez-docker-helm-build') {
             // Clean up any leftover Docker images on the Jenkins agent
             sh 'docker system prune -f'
+            }
         }
         success {
             // Notify the user of the successful build
