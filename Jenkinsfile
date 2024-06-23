@@ -21,7 +21,7 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                container('ez-docker-helm-build') { // Assuming the container that can run Docker is named 'docker'
+                container('ez-docker-helm-build') { // Ensure the container name matches the one in your build-pod.yaml
                     script {
                         // Build the Docker image with the latest tag
                         sh "docker build -t ${env.DOCKER_IMAGE}:latest ."
@@ -31,7 +31,7 @@ pipeline {
         }
         stage('Push Docker Image') {
             steps {
-                container('ez-docker-helm-build') { // Assuming the container that can run Docker is named 'docker'
+                container('ez-docker-helm-build') { // Ensure the container name matches the one in your build-pod.yaml
                     script {
                         // Push the Docker image to the registry
                         docker.withRegistry("https://${env.DOCKER_REGISTRY}", "${env.DOCKER_CREDENTIALS_ID}") {
@@ -43,12 +43,11 @@ pipeline {
         }
     }
 
-
     post {
         always {
             container('ez-docker-helm-build') {
-            // Clean up any leftover Docker images on the Jenkins agent
-            sh 'docker system prune -f'
+                // Clean up any leftover Docker images on the Jenkins agent
+                sh 'docker system prune -f'
             }
         }
         success {
